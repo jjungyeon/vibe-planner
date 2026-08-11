@@ -84,6 +84,11 @@ type PartRule = {
   extras?: string[];
   /** 화면이 아니라 다른 화면에 포함되는 부품 */
   includedIn?: PartId;
+  /**
+   * 같은 자리를 두고 갈리는 부품.
+   * 한쪽이 켜지면 나머지 한쪽은 "만들지 않을 것"이 아니다.
+   */
+  altGroup?: string;
 };
 
 /** PRD 11-2 화면 부품 규칙표 */
@@ -133,6 +138,7 @@ const PART_RULES: PartRule[] = [
     baseName: "입력 화면",
     partName: "단일 입력 화면",
     when: (v) => v.B1 === "1~3개",
+    altGroup: "B_ENTRY",
   },
   {
     id: "B_STEPS",
@@ -141,6 +147,7 @@ const PART_RULES: PartRule[] = [
     partName: "단계별 질문 화면",
     when: (v) => v.B1 === "4개 이상",
     extras: ["진행 표시"],
+    altGroup: "B_ENTRY",
   },
   {
     id: "B_RESULT",
@@ -286,8 +293,16 @@ function buildScreens(
     if (rule.includedIn && live.has(rule.includedIn)) live.add(rule.id);
   }
 
+  // 켜진 부품이 속한 대체 묶음. 이 묶음의 나머지 한쪽은 제외 범위에 넣지 않는다.
+  const liveGroups = new Set(
+    trackRules
+      .filter((rule) => live.has(rule.id) && rule.altGroup)
+      .map((rule) => rule.altGroup),
+  );
+
   const offParts = trackRules
     .filter((rule) => !live.has(rule.id))
+    .filter((rule) => !(rule.altGroup && liveGroups.has(rule.altGroup)))
     .map((rule) => rule.partName);
 
   return { screens, offParts };
