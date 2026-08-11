@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useSyncExternalStore } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Audience,
   FollowUpId,
@@ -26,7 +26,16 @@ import { ChoiceList, ChoiceOption } from "@/components/ChoiceList";
 import { Progress } from "@/components/Progress";
 
 export default function QuestionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <QuestionsView />
+    </Suspense>
+  );
+}
+
+function QuestionsView() {
   const router = useRouter();
+  const params = useSearchParams();
 
   const inBrowser = useSyncExternalStore(
     subscribeNever,
@@ -38,8 +47,13 @@ export default function QuestionsPage() {
     getDraftSnapshot,
     getServerDraftSnapshot,
   );
-  /** 뒤로 가기·다음으로 옮긴 자리. -1이면 저장된 답에서 이어간다. */
-  const [moved, setMoved] = useState(-1);
+  /**
+   * 뒤로 가기·다음으로 옮긴 자리. -1이면 저장된 답에서 이어간다.
+   * 예시에서 넘어왔으면 첫 질문부터 본다.
+   */
+  const [moved, setMoved] = useState(
+    params.get("start") === "first" ? 0 : -1,
+  );
 
   if (!inBrowser) return null;
 
